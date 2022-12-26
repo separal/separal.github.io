@@ -1,0 +1,118 @@
+#include <iostream>
+#include <fstream>
+#include <sstream>
+#include <iomanip>
+#include <cctype>
+#include <string>
+#include <cstring>
+#include <vector>
+using namespace std;
+
+
+ 
+struct Node { // our tree 
+    int curr; 
+    int rootStart;
+    struct Node *left;// left branch
+    struct Node *right; //right branch
+    
+};
+int search(int arr[], int begin, int end, int value){ //finds where the given value is in the array
+    for (int i = begin; i <= end; i++){
+        if (arr[i] == value)return i; //returns value of where in the array the value is 
+    }
+    return -1;// return negative one if not in array 
+}
+Node* newNode(int curr){
+    Node* node = new Node;
+    node->curr = curr;
+    node->rootStart = curr;
+    node->left = nullptr;
+    node->right = nullptr;
+    return(node);
+}
+ 
+int* findMe(int inOrd[], int branch[], int z, int p){
+    int j = 0;
+    int *nl = new int[z];
+    for (int i = 0; i < p; i++){
+        if (search(inOrd, 0, z - 1, branch[i]) != -1) // if its position in the array can be found 
+        nl[j] = branch[i], j++;
+    }
+    return nl;
+}
+Node* constructTree(int inOrd[], int levOrd[], int begin, int end, int e){ //memory leak?
+// building the binary tree from values
+    int root = levOrd[0];
+    Node* keyVal = newNode(root); // points to root of the tree
+    if (begin > end)return NULL;
+    if (begin == end)return keyVal;
+    int aqui = search(inOrd, begin, end, keyVal->curr);
+    int* lorde = findMe(inOrd, levOrd, aqui, e);
+    int* arr = findMe(inOrd + aqui + 1, levOrd, e - 1, e);
+    keyVal->left = constructTree(inOrd, lorde, begin, aqui - 1, aqui - begin);
+    keyVal->right = constructTree(inOrd, arr, aqui + 1, end,end - aqui);
+    return keyVal;
+}
+int getNode(Node* node) { // this returns the current node SP
+  int val;
+  val = node->curr;
+  return val;
+}
+int main(int argc, char *argv[])
+{
+    ifstream inOrder; //first file (inorder data)
+    inOrder.open(argv[1]);
+    int inOrd[10000]; // initialize array for inorder data
+    int a;
+    int i = 0;
+  
+    while(inOrder>>a){ // read in data from file to inorder vector
+        inOrd[i] = a;
+        i++;
+    }
+   inOrder.close(); // close first file
+   
+   ifstream levelOrder; // second file (levelorder data)
+   levelOrder.open(argv[2]);
+   int levelOrd[10000]; // initialize array for levelorder data
+   int b;
+   int j = 0;
+   while(levelOrder >> b) { // read in data from levelorder file
+    levelOrd[j] = b;
+    j++;
+   }
+   levelOrder.close(); // close second file
+
+    int n = i;
+    Node* root = constructTree(inOrd, levelOrd, 0, n - 1, n);
+    Node* newRoot =root;
+ 
+    ifstream encode; //open encoded text 
+    encode.open(argv[3]);
+   char read;// storing values read from encoded file
+   char temp; // store int value as char to append to string 
+   int t; //used to store specific value at spot in the tree
+  string text = "";
+  while(encode >> read){ // reading in from encoded file
+      if (read == '0') { // move to left when zero and right when 1
+        root = root->left;
+      }
+      else {
+        root = root->right;
+      }
+  t = getNode(root);
+  if (t < 128){ // leaves
+    temp = t;
+    text+=temp; // add to the string of decoded text
+    root = newRoot; // set back to beginning 
+  }
+
+   }
+   encode.close(); // close third file
+   cout << text;
+   
+
+ 
+    return 0;
+}
